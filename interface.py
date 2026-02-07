@@ -1,13 +1,60 @@
 import streamlit as st
 import time
 import os
-import random
-from utils import generate_content
+from dotenv import load_dotenv
+
+# Import the actual agent teams
+from defense_team import DefenseAttorneyAgent, DefenseStrategistAgent
+from prosecution_team import ProsecutorAgent, ProsecutionStrategistAgent
+from judge import JudgeAgent
+from utils import generate_content # Keep for CaseManager initial summary
+
+# Load environment variables
+load_dotenv()
 
 # Page Config
-st.set_page_config(page_title="Legal Debate Simulation", layout="wide")
+st.set_page_config(page_title="AI Legal Debate Simulation", layout="wide", page_icon="⚖️")
 
-# Classes
+# --- INITIALIZATION ---
+def get_api_keys():
+    """Retrieve API keys from environment variables."""
+    keys = {
+        "gemini_1": os.getenv("GEMINI_API_KEY1"), # Defense Attorney
+        "gemini_2": os.getenv("GEMINI_API_KEY2"), # Prosecutor
+        "groq_1": os.getenv("GROQ_API_KEY1"),    # Defense Strategist
+        "groq_2": os.getenv("GROQ_API_KEY2"),    # Prosecution Strategist
+        "groq_3": os.getenv("GROQ_API_KEY3"),    # Judge
+        "tavily": os.getenv("TAVILY_API_KEY")    # Judge & Teams
+    }
+    
+    # Check for missing keys
+    missing = [k for k, v in keys.items() if not v]
+    if missing:
+        st.error(f"Missing API Keys in .env: {', '.join(missing)}")
+        st.stop()
+    return keys
+
+# Initialize Agents
+@st.cache_resource
+def initialize_agents():
+    keys = get_api_keys()
+    
+    st.toast("Initializing Legal Teams...", icon="⚖️")
+    
+    # Defense Team (Gemini for Advocate, Groq for Strategist)
+    defense_attorney = DefenseAttorneyAgent(gemini_api_key=keys["gemini_1"], tavily_api_key=keys["tavily"])
+    defense_strategist = DefenseStrategistAgent(groq_api_key=keys["groq_1"], tavily_api_key=keys["tavily"])
+    
+    # Prosecution Team (Gemini for Prosecutor, Groq for Strategist)
+    prosecutor = ProsecutorAgent(gemini_api_key=keys["gemini_2"], tavily_api_key=keys["tavily"])
+    prosecution_strategist = ProsecutionStrategistAgent(groq_api_key=keys["groq_2"], tavily_api_key=keys["tavily"])
+    
+    # Judge (Groq + Tavily)
+    judge = JudgeAgent(groq_api_key=keys["groq_3"], tavily_api_key=keys["tavily"])
+    
+    return defense_attorney, defense_strategist, prosecutor, prosecution_strategist, judge
+
+# Helper for Case Summary (using simple utility function)
 class CaseManager:
     def __init__(self, case_description):
         self.case_description = case_description
@@ -20,188 +67,114 @@ class CaseManager:
         Case Description:
         {self.case_description}
         """
+        # Fallback to utils.generate_content (which uses a default key/model)
+        # Ideally this should also use one of the specific keys, but keeping as is for now
+        # assuming utils.py is configured correctly.
         return generate_content(prompt)
 
-class Debater:
-    def __init__(self, role, case_summary):
-        self.role = role # "Advocate" or "Prosecutor"
-        self.case_summary = case_summary
+# --- MAIN INTERFACE ---
+st.title("⚖️ AI Courtroom: Prosecution vs Defense")
+st.markdown("### Agentic Workflow with Strategists & Judicial Oversight")
 
-    def generate_argument(self, history, round_num):
-        prompt = f"""
-        You are the {self.role} in a legal debate. 
-        Case Summary: {self.case_summary}
-        
-        Previous Debate History:
-        {history}
-        
-        This is Round {round_num}. Present your arguments to support your side.
-        Be persuasive, logical, and cite legal principles if applicable.
-        """
-        return generate_content(prompt)
-
-    def revise_argument(self, original_argument, critic_report):
-        prompt = f"""
-        You are the {self.role}. 
-        Your original argument was: 
-        {original_argument}
-        
-        The Critic found the following flaws:
-        {critic_report}
-        
-        Please revise your argument to address these flaws and strengthen your position.
-        """
-        return generate_content(prompt)
-
-class Critic:
-    def __init__(self, side):
-        self.side = side # Critic for Side A or Side B
-
-    def analyze_argument(self, opponent_argument, case_summary):
-        prompt = f"""
-        You are a legal critic for {self.side}.
-        Case Summary: {case_summary}
-        
-        Opponent's Argument:
-        {opponent_argument}
-        
-        Analyze this argument for logical fallacies, weak evidence, and legal gaps.
-        Output a structured flaw report.
-        """
-        return generate_content(prompt)
-
-class Judge:
-    def __init__(self, case_summary):
-        self.case_summary = case_summary
-
-    def evaluate_round(self, round_history):
-        prompt = f"""
-        You are the Judge in this legal debate.
-        Case Summary: {self.case_summary}
-        
-        Review the following debate round:
-        {round_history}
-        
-        Provide:
-        1. Confidence Score for Side A (0-100)
-        2. Confidence Score for Side B (0-100)
-        3. Agreement Level (Low/Medium/High) - how close the sides are to a resolution or if one side is clearly winning.
-        4. Brief commentary on the arguments.
-        
-        Output in JSON format: {{ "side_a_score": int, "side_b_score": int, "agreement_level": "str", "commentary": "str" }}
-        """
-        # Note: In a real app, you'd want to parse this JSON strictly. 
-        # For this prototype, we'll trust the LLM or basic parsing.
-        return generate_content(prompt)
-
-    def final_decision(self, full_history):
-        prompt = f"""
-        You are the Judge. The debate has concluded.
-        Case Summary: {self.case_summary}
-        
-        Full Debate History:
-        {full_history}
-        
-        Make a final decision. 
-        If there is a clear winner, declare the verdict and reasons.
-        If the disagreement is too high or evidence is insufficient, refuse to decide and issue a warning.
-        """
-        return generate_content(prompt)
-
-# Sidebar
+# Sidebar Configuration
 st.sidebar.title("Configuration")
-num_rounds = st.sidebar.slider("Number of Debate Rounds", 1, 5, 3)
-confidence_threshold = st.sidebar.slider("Confidence Threshold for Verdict", 50, 100, 80)
+num_rounds = st.sidebar.slider("Number of Rounds", 1, 3, 1)
 
-# Main Interface
-st.title("⚖️ AI Legal Debate Simulation")
-st.markdown("### Agentic Workflow: Advocate vs. Prosecutor with Critics and Judge")
-
+# Session State
 if "history" not in st.session_state:
     st.session_state.history = []
 if "case_summary" not in st.session_state:
     st.session_state.case_summary = None
+if "run_simulation" not in st.session_state:
+    st.session_state.run_simulation = False
 
-case_input = st.text_area("Enter Case Description / Facts", height=200, placeholder="Type the case details here...")
+# Input Area
+case_input = st.text_area("Enter Case Details / Facts", height=150, placeholder="Describe the legal case, crime, or dispute here...")
 
-if st.button("Start Simulation"):
+if st.button("Start Court Session", type="primary"):
     if not case_input:
         st.warning("Please enter a case description.")
     else:
-        with st.spinner("Analyzing Case..."):
+        st.session_state.run_simulation = True
+        with st.spinner("Clerk is summarizing the case..."):
             case_manager = CaseManager(case_input)
             summary = case_manager.summarize_case()
             st.session_state.case_summary = summary
-            st.session_state.history = [] # Reset history
-            
-        st.subheader("Case Summary")
-        st.write(summary)
-        
-        # Initialize Agents
-        advocate = Debater("Advocate (Side A)", summary)
-        prosecutor = Debater("Prosecutor (Side B)", summary)
-        critic_for_a = Critic("Side A's Critic") # Critiques B
-        critic_for_b = Critic("Side B's Critic") # Critiques A
-        judge = Judge(summary)
-        
-        debate_history_text = ""
-        
-        progress_bar = st.progress(0)
-        
-        for r in range(num_rounds):
-            st.markdown(f"---")
-            st.subheader(f"Round {r+1}")
-            
-            # 1. Advocate Argues
-            with st.spinner(f"Round {r+1}: Advocate is arguing..."):
-                adv_arg = advocate.generate_argument(debate_history_text, r+1)
-            
-            # 2. Critic for B analyzes Advocate
-            with st.spinner(f"Round {r+1}: Prosecutor's Critic is analyzing..."):
-                crit_b_report = critic_for_b.analyze_argument(adv_arg, summary)
-            
-            # 3. Advocate Revises (Optional step based on prompt, let's keep it simple: Critic output is shown)
-            # In the prompt description: "critiques convey their info to the agent and the agent prepares revised arguments"
-            # So let's implement the revision step immediately for a better flow.
-            with st.spinner(f"Round {r+1}: Advocate is revising based on critique..."):
-               adv_arg_revised = advocate.revise_argument(adv_arg, crit_b_report)
+            st.session_state.history = []
 
-            st.chat_message("user", avatar="🧑‍⚖️").write(f"**Advocate (Side A):**\n\n{adv_arg_revised}")
-            with st.expander("Show Critic Report against Advocate"):
-                st.info(crit_b_report)
-            
-            debate_history_text += f"\nRound {r+1} - Advocate: {adv_arg_revised}\nCritic to Advocate: {crit_b_report}\n"
+if st.session_state.run_simulation and st.session_state.case_summary:
+    st.success("Case Docket Created")
+    with st.expander("View Case Summary", expanded=True):
+        st.write(st.session_state.case_summary)
+    
+    # Load Agents
+    defense_attorney, defense_strategist, prosecutor, prosecution_strategist, judge = initialize_agents()
+    
+    defense_brief = ""
+    prosecution_brief = ""
+    defense_strategy_doc = ""
+    prosecution_strategy_doc = ""
 
-            # 4. Prosecutor Argues
-            with st.spinner(f"Round {r+1}: Prosecutor is arguing..."):
-                pros_arg = prosecutor.generate_argument(debate_history_text, r+1)
-            
-            # 5. Critic for A analyzes Prosecutor
-            with st.spinner(f"Round {r+1}: Advocate's Critic is analyzing..."):
-                crit_a_report = critic_for_a.analyze_argument(pros_arg, summary)
-
-            # 6. Prosecutor Revises
-            with st.spinner(f"Round {r+1}: Prosecutor is revising based on critique..."):
-                pros_arg_revised = prosecutor.revise_argument(pros_arg, crit_a_report)
-                
-            st.chat_message("assistant", avatar="👮").write(f"**Prosecutor (Side B):**\n\n{pros_arg_revised}")
-            with st.expander("Show Critic Report against Prosecutor"):
-                st.info(crit_a_report)
-                
-            debate_history_text += f"\nRound {r+1} - Prosecutor: {pros_arg_revised}\nCritic to Prosecutor: {crit_a_report}\n"
-
-            # 7. Judge Evaluates
-            with st.spinner(f"Round {r+1}: Judge is evaluating..."):
-                judge_eval = judge.evaluate_round(debate_history_text)
-            
-            st.success(f"**Judge's Evaluation (Round {r+1}):**\n\n{judge_eval}")
-            debate_history_text += f"\nJudge's Eval: {judge_eval}\n"
-            
-            progress_bar.progress((r + 1) / num_rounds)
-
-        # Final Decision
+    # --- SIMULATION LOOP ---
+    for r in range(num_rounds):
         st.markdown("---")
-        st.subheader("Final Verdict")
-        with st.spinner("Judge is making the final decision..."):
-            final_verdict = judge.final_decision(debate_history_text)
-        st.error(final_verdict)
+        st.subheader(f"Session Round {r+1}")
+        
+        col1, col2 = st.columns(2)
+        
+        # 1. Prosecution Case (Prosecutor always starts criminal cases)
+        with col1:
+            st.markdown("### 🏛️ Prosecution")
+            with st.spinner("Prosecution Team is strategizing..."):
+                # Strategy Step
+                if r == 0:
+                    p_strat = prosecution_strategist.strategize(st.session_state.case_summary, "Initial Opening Strategy")
+                else:
+                    p_strat = prosecution_strategist.strategize(st.session_state.case_summary, defense_brief)
+                
+                prosecution_strategy_doc += f"\nRound {r+1}: {p_strat}\n"
+                with st.expander("View Prosecution Strategy (Internal)", expanded=False):
+                    st.info(p_strat)
+            
+            with st.spinner("Prosecutor is presenting argument..."):
+                # Argument Step
+                if r == 0:
+                     p_arg = prosecutor.prosecute(st.session_state.case_summary, "Opening Statement")
+                else:
+                     p_arg = prosecutor.prosecute(st.session_state.case_summary, defense_brief)
+                
+                prosecution_brief += f"\nRound {r+1}: {p_arg}\n"
+                st.chat_message("assistant", avatar="⚖️").write(p_arg)
+
+        # 2. Defense Case
+        with col2:
+            st.markdown("### 🛡️ Defense")
+            with st.spinner("Defense Team is analyzing..."):
+                # Strategy Step
+                d_strat = defense_strategist.strategize(st.session_state.case_summary, p_arg)
+                defense_strategy_doc += f"\nRound {r+1}: {d_strat}\n"
+                with st.expander("View Defense Strategy (Internal)", expanded=False):
+                    st.info(d_strat)
+            
+            with st.spinner("Defense Attorney is rebutting..."):
+                # Argument Step
+                d_arg = defense_attorney.advocate(st.session_state.case_summary, p_arg)
+                defense_brief += f"\nRound {r+1}: {d_arg}\n"
+                st.chat_message("user", avatar="🛡️").write(d_arg)
+
+        # 3. Judicial Note
+        st.caption(f"End of Round {r+1}. The Judge is taking notes.")
+
+    # --- FINAL VERDICT ---
+    st.markdown("---")
+    st.header("🧑‍⚖️ Final Verdict")
+    
+    if st.button("Request Verdict"):
+        with st.spinner("The Judge is deliberating (checking facts with Tavily)..."):
+            verdict = judge.deliberate(
+                defense_brief=defense_brief,
+                prosecution_brief=prosecution_brief,
+                defense_strategy=defense_strategy_doc,
+                prosecution_strategy=prosecution_strategy_doc
+            )
+            st.markdown(verdict)

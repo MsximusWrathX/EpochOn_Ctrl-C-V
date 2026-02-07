@@ -7,12 +7,13 @@ load_dotenv()
 
 def configure_genai():
     """Configures the Google Generative AI with the API key."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    # Try getting the default key, or fallback to the numbered keys
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY1") or os.getenv("GEMINI_API_KEY2")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY not found in environment variables.")
+        raise ValueError("No valid GEMINI_API_KEY found in environment variables.")
     genai.configure(api_key=api_key)
 
-def generate_content(prompt, model_name="gemini-1.5-flash"):
+def generate_content(prompt, model_name=None):
     """
     Generates content using the specified Gemini model.
     
@@ -23,6 +24,9 @@ def generate_content(prompt, model_name="gemini-1.5-flash"):
     Returns:
         str: The generated text content.
     """
+    if model_name is None:
+         model_name = "gemini-2.5-flash-lite"
+
     try:
         configure_genai()
         model = genai.GenerativeModel(model_name)

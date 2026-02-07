@@ -9,7 +9,7 @@ class ProsecutorAgent:
     def __init__(self, gemini_api_key: str, tavily_api_key: str, status_callback: Callable[[str], None] = None):
         # Using Gemini
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash", 
+            model="gemini-2.5-flash-lite",
             google_api_key=gemini_api_key,
             temperature=0.6 # Higher temperature for creative prosecution
         )

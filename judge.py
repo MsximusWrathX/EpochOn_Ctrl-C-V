@@ -17,7 +17,7 @@ class JudgeAgent:
         """
         self.llm = ChatGroq(
             temperature=0, # Zero temperature for maximum objectivity
-            model_name="llama3-70b-8192", # High reasoning capability
+            model="llama-3.3-70b-versatile", # High reasoning capability
             groq_api_key=groq_api_key
         )
         self.tavily_client = TavilyClient(api_key=tavily_api_key)
