@@ -39,7 +39,7 @@ def get_api_keys():
 def initialize_agents():
     keys = get_api_keys()
     
-    st.toast("Initializing Legal Teams...", icon="⚖️")
+    # st.toast("Initializing Legal Teams...", icon="⚖️") # Removed to fix CacheReplayClosureError
     
     # Defense Team (Gemini for Advocate, Groq for Strategist)
     defense_attorney = DefenseAttorneyAgent(gemini_api_key=keys["gemini_1"], tavily_api_key=keys["tavily"])
