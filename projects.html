@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V-CRAFT | Projects</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+  <nav>
+    <div class="logo">V-CRAFT.</div>
+    <input type="checkbox" id="menu-toggle" class="menu-toggle">
+    <label for="menu-toggle" class="hamburger">
+      <i class="ph ph-list"></i>
+    </label>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="projects.html" style="color: var(--accent-crimson);">Projects</a>
+      <a href="skills.html">Skills</a>
+      <a href="about.html">About Me</a>
+    </div>
+  </nav>
+
+  <!-- Corner Accent (Projects: Top-Right) -->
+  <div class="corner-accent accent-tr"></div>
+
+  <main>
+    <section>
+      <div class="shape shape-1"></div>
+
+      <div class="reveal">
+        <p
+          style="text-transform: uppercase; letter-spacing: 3px; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">
+          My Portfolio</p>
+        <h2 style="font-size: clamp(2.5rem, 5vw, 4rem); margin-bottom: 1.5rem;"><span
+            style="color: var(--accent-crimson)">Featured</span> Projects</h2>
+
+        <div class="grid">
+          <div class="card reveal delay-1">
+            <h3>DC Undervoltage Protection</h3>
+            <p>A hardware safety system designed to monitor and protect DC circuits from undervoltage conditions.</p>
+            <a href="project-dc-undervoltage.html" class="card-link">View Details</a>
+          </div>
+          <div class="card reveal delay-2">
+            <h3>Attendance Management</h3>
+            <p>A desktop application built using Java Swing for efficiently tracking attendance with a refined GUI.</p>
+            <a href="project-attendance.html" class="card-link">View Details</a>
+          </div>
+          <div class="card reveal delay-3">
+            <h3>IoT Digital Thermometer</h3>
+            <p>A smart temperature monitoring device utilizing IoT concepts for real-time data transmission.</p>
+            <a href="project-iot-thermometer.html" class="card-link">View Details</a>
+          </div>
+          <div class="card reveal delay-1">
+            <h3>Thermal Expansion Analysis</h3>
+            <p>An engineering simulation project utilizing ANSYS to study heat dissipation in heat sink fins.</p>
+            <a href="project-thermal-analysis.html" class="card-link">View Details</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>

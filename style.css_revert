@@ -1,0 +1,59 @@
+/* Corner Accents - Thick Inward-Pointing Bars */
+.corner-accent {
+  position: fixed;
+  background: var(--accent-crimson);
+  z-index: 999;
+  transition: transform 0.15s ease-out;
+  pointer-events: none;
+  height: 80px; /* Thicker */
+  width: 20vw;
+  min-width: 200px;
+}
+
+/* Home: Top-Left */
+.accent-tl {
+  top: -40px;
+  left: -40px;
+  transform: rotate(45deg) translateX(-100%);
+  animation: accentEntryTL 1.8s cubic-bezier(0.19, 1, 0.22, 1) forwards 4s;
+}
+
+@keyframes accentEntryTL {
+  to { transform: rotate(45deg) translateX(0); }
+}
+
+/* Projects: Top-Right */
+.accent-tr {
+  top: -40px;
+  right: -40px;
+  transform: rotate(-45deg) translateX(100%);
+  animation: accentEntryTR 1.8s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.5s;
+}
+
+@keyframes accentEntryTR {
+  to { transform: rotate(-45deg) translateX(0); }
+}
+
+/* About: Bottom-Left */
+.accent-bl {
+  bottom: -40px;
+  left: -40px;
+  transform: rotate(-45deg) translateX(-100%);
+  animation: accentEntryBL 1.8s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.5s;
+}
+
+@keyframes accentEntryBL {
+  to { transform: rotate(-45deg) translateX(0); }
+}
+
+/* Project Detail: Bottom-Right */
+.accent-br {
+  bottom: -40px;
+  right: -40px;
+  transform: rotate(45deg) translateX(100%);
+  animation: accentEntryBR 1.8s cubic-bezier(0.19, 1, 0.22, 1) forwards 0.5s;
+}
+
+@keyframes accentEntryBR {
+  to { transform: rotate(45deg) translateX(0); }
+}
